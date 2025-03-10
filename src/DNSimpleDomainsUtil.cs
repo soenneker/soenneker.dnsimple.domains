@@ -1,15 +1,15 @@
-﻿using System.Net.Http;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Soenneker.DNSimple.Client.Abstract;
 using Soenneker.DNSimple.Domains.Abstract;
+using Soenneker.DNSimple.Domains.Requests;
+using Soenneker.DNSimple.Domains.Responses;
 using Soenneker.Extensions.Configuration;
+using Soenneker.Extensions.HttpClient;
+using Soenneker.Extensions.ValueTask;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Soenneker.DNSimple.Domains.Responses;
-using Soenneker.Extensions.ValueTask;
-using Soenneker.Extensions.HttpClient;
-using Microsoft.Extensions.Logging;
-using Soenneker.DNSimple.Domains.Requests;
 
 namespace Soenneker.DNSimple.Domains;
 
@@ -28,66 +28,50 @@ public class DNSimpleDomainsUtil: IDnSimpleDomainsUtil
         _accountId = configuration.GetValueStrict<string>("DNSimple:AccountId");
     }
 
-    public async ValueTask<DomainCheckResponse?> CheckDomainAvailability(string domain, bool test = false, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Lists all domains in the account.
+    /// </summary>
+    public async ValueTask<DomainListResponse?> ListDomains(string? nameFilter = null, int? registrantId = null, bool test = false, CancellationToken cancellationToken = default)
     {
-        var endpoint = $"{_accountId}/registrar/domains/{domain}/check";
+        var endpoint = $"{_accountId}/domains";
+        if (!string.IsNullOrEmpty(nameFilter) || registrantId.HasValue)
+        {
+            endpoint += "?";
+            if (!string.IsNullOrEmpty(nameFilter)) endpoint += $"name_like={nameFilter}&";
+            if (registrantId.HasValue) endpoint += $"registrant_id={registrantId}";
+        }
+
         HttpClient client = await _clientUtil.Get(test, cancellationToken).NoSync();
-        return await client.SendToType<DomainCheckResponse>(HttpMethod.Get, endpoint, null, _logger, cancellationToken);
+        return await client.SendToType<DomainListResponse>(HttpMethod.Get, endpoint, null, _logger, cancellationToken);
     }
 
-    public async ValueTask<DomainPremiumPriceResponse?> GetDomainPremiumPrice(string domain, string action = "registration", bool test = false, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Creates a new domain entry in the account.
+    /// </summary>
+    public async ValueTask<DomainResponse?> CreateDomain(DomainCreateRequest request, bool test = false, CancellationToken cancellationToken = default)
     {
-        var endpoint = $"{_accountId}/registrar/domains/{domain}/premium_price?action={action}";
+        var endpoint = $"{_accountId}/domains";
         HttpClient client = await _clientUtil.Get(test, cancellationToken).NoSync();
-        return await client.SendToType<DomainPremiumPriceResponse>(HttpMethod.Get, endpoint, null, _logger, cancellationToken);
+        return await client.SendToType<DomainResponse>(HttpMethod.Post, endpoint, request, _logger, cancellationToken);
     }
 
-    public async ValueTask<DomainPricesResponse?> GetDomainPrices(string domain, bool test = false, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Retrieves the details of an existing domain.
+    /// </summary>
+    public async ValueTask<DomainResponse?> GetDomain(string domain, bool test = false, CancellationToken cancellationToken = default)
     {
-        var endpoint = $"{_accountId}/registrar/domains/{domain}/prices";
+        var endpoint = $"{_accountId}/domains/{domain}";
         HttpClient client = await _clientUtil.Get(test, cancellationToken).NoSync();
-        return await client.SendToType<DomainPricesResponse>(HttpMethod.Get, endpoint, null, _logger, cancellationToken);
+        return await client.SendToType<DomainResponse>(HttpMethod.Get, endpoint, null, _logger, cancellationToken);
     }
 
-    public async ValueTask<DomainRegistrationResponse?> RegisterDomain(string domain, DomainRegistrationRequest request, bool test = false, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Deletes a domain from the account.
+    /// </summary>
+    public async ValueTask<bool> DeleteDomain(string domain, bool test = false, CancellationToken cancellationToken = default)
     {
-        var endpoint = $"{_accountId}/registrar/domains/{domain}/registrations";
+        var endpoint = $"{_accountId}/domains/{domain}";
         HttpClient client = await _clientUtil.Get(test, cancellationToken).NoSync();
-        return await client.SendToType<DomainRegistrationResponse>(HttpMethod.Post, endpoint, request, _logger, cancellationToken);
-    }
-
-    public async ValueTask<DomainRegistrationResponse?> GetDomainRegistration(string domain, int registrationId, bool test = false, CancellationToken cancellationToken = default)
-    {
-        var endpoint = $"{_accountId}/registrar/domains/{domain}/registrations/{registrationId}";
-        HttpClient client = await _clientUtil.Get(test, cancellationToken).NoSync();
-        return await client.SendToType<DomainRegistrationResponse>(HttpMethod.Get, endpoint, null, _logger, cancellationToken);
-    }
-
-    public async ValueTask<DomainTransferResponse?> TransferDomain(string domain, DomainTransferRequest request, bool test = false, CancellationToken cancellationToken = default)
-    {
-        var endpoint = $"{_accountId}/registrar/domains/{domain}/transfers";
-        HttpClient client = await _clientUtil.Get(test, cancellationToken).NoSync();
-        return await client.SendToType<DomainTransferResponse>(HttpMethod.Post, endpoint, request, _logger, cancellationToken);
-    }
-
-    public async ValueTask<DomainTransferResponse?> GetDomainTransfer(string domain, int transferId, bool test = false, CancellationToken cancellationToken = default)
-    {
-        var endpoint = $"{_accountId}/registrar/domains/{domain}/transfers/{transferId}";
-        HttpClient client = await _clientUtil.Get(test, cancellationToken).NoSync();
-        return await client.SendToType<DomainTransferResponse>(HttpMethod.Get, endpoint, null, _logger, cancellationToken);
-    }
-
-    public async ValueTask<bool> CancelDomainTransfer(string domain, int transferId, bool test = false, CancellationToken cancellationToken = default)
-    {
-        var endpoint = $"{_accountId}/registrar/domains/{domain}/transfers/{transferId}";
-        HttpClient client = await _clientUtil.Get(test, cancellationToken).NoSync();
-        return (await client.SendToType<DomainTransferResponse>(HttpMethod.Delete, endpoint, null, _logger, cancellationToken)) != null;
-    }
-
-    public async ValueTask<DomainRenewalResponse?> RenewDomain(string domain, DomainRenewalRequest request, bool test = false, CancellationToken cancellationToken = default)
-    {
-        var endpoint = $"{_accountId}/registrar/domains/{domain}/renewals";
-        HttpClient client = await _clientUtil.Get(test, cancellationToken).NoSync();
-        return await client.SendToType<DomainRenewalResponse>(HttpMethod.Post, endpoint, request, _logger, cancellationToken);
+        return (await client.SendToType<DomainResponse>(HttpMethod.Delete, endpoint, null, _logger, cancellationToken)) != null;
     }
 }

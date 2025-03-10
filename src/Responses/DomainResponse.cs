@@ -3,13 +3,13 @@
 namespace Soenneker.DNSimple.Domains.Responses;
 
 /// <summary>
-/// Response model for domain transfer.
+/// Response model for domain operations.
 /// </summary>
-public class DomainTransferResponse
+public class DomainResponse
 {
     /// <summary>
-    /// The domain transfer details.
+    /// The domain details.
     /// </summary>
     [JsonPropertyName("data")]
-    public DomainTransferData Data { get; set; }
+    public DomainData Data { get; set; }
 }

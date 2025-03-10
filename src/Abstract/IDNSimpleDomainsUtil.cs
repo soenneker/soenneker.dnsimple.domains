@@ -1,7 +1,7 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
-using Soenneker.DNSimple.Domains.Requests;
+﻿using Soenneker.DNSimple.Domains.Requests;
 using Soenneker.DNSimple.Domains.Responses;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Soenneker.DNSimple.Domains.Abstract;
 
@@ -11,51 +11,26 @@ namespace Soenneker.DNSimple.Domains.Abstract;
 public interface IDnSimpleDomainsUtil
 {
     /// <summary>
-    /// Checks if a domain is available for registration.
+    /// Lists all domains in the account.
     /// </summary>
-    /// <param name="domain">The domain name to check.</param>
+    /// <param name="nameFilter">Filter domains by name.</param>
+    /// <param name="registrantId">Filter domains by registrant ID.</param>
     /// <param name="test">Indicates whether to use a test environment.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The domain availability information.</returns>
-    ValueTask<DomainCheckResponse?> CheckDomainAvailability(string domain, bool test = false, CancellationToken cancellationToken = default);
+    ValueTask<DomainListResponse?> ListDomains(string? nameFilter = null, int? registrantId = null, bool test = false, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Retrieves the premium price for a domain.
+    /// Creates a domain.
     /// </summary>
-    ValueTask<DomainPremiumPriceResponse?> GetDomainPremiumPrice(string domain, string action = "registration", bool test = false, CancellationToken cancellationToken = default);
+    ValueTask<DomainResponse?> CreateDomain(DomainCreateRequest request, bool test = false, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Retrieves domain prices.
+    /// Retrieves details of a domain.
     /// </summary>
-    ValueTask<DomainPricesResponse?> GetDomainPrices(string domain, bool test = false, CancellationToken cancellationToken = default);
+    ValueTask<DomainResponse?> GetDomain(string domain, bool test = false, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Registers a domain.
+    /// Deletes a domain.
     /// </summary>
-    ValueTask<DomainRegistrationResponse?> RegisterDomain(string domain, DomainRegistrationRequest request, bool test = false, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Retrieves details of a domain registration.
-    /// </summary>
-    ValueTask<DomainRegistrationResponse?> GetDomainRegistration(string domain, int registrationId, bool test = false, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Transfers a domain.
-    /// </summary>
-    ValueTask<DomainTransferResponse?> TransferDomain(string domain, DomainTransferRequest request, bool test = false, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Retrieves details of a domain transfer.
-    /// </summary>
-    ValueTask<DomainTransferResponse?> GetDomainTransfer(string domain, int transferId, bool test = false, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Cancels a domain transfer.
-    /// </summary>
-    ValueTask<bool> CancelDomainTransfer(string domain, int transferId, bool test = false, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Renews a domain.
-    /// </summary>
-    ValueTask<DomainRenewalResponse?> RenewDomain(string domain, DomainRenewalRequest request, bool test = false, CancellationToken cancellationToken = default);
+    ValueTask<bool> DeleteDomain(string domain, bool test = false, CancellationToken cancellationToken = default);
 }
