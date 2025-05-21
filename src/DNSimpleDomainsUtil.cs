@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Soenneker.DNSimple.OpenApiClient.Item.Domains.Item;
 using Microsoft.Extensions.Configuration;
 using Soenneker.Extensions.Configuration;
+using Soenneker.Extensions.Task;
 
 namespace Soenneker.DNSimple.Domains;
 
@@ -72,6 +73,6 @@ public sealed class DNSimpleDomainsUtil : IDNSimpleDomainsUtil
     {
         DNSimpleOpenApiClient client = await _clientUtil.Get(cancellationToken);
 
-        await client[_accountId].Domains[domainNameOrId].DeleteAsync(cancellationToken: cancellationToken);
+        await client[_accountId].Domains[domainNameOrId].DeleteAsync(cancellationToken: cancellationToken).NoSync();
     }
 }
