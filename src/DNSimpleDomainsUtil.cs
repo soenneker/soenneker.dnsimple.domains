@@ -1,32 +1,34 @@
 ﻿using Soenneker.DNSimple.Domains.Abstract;
-using System;
+using Soenneker.DNSimple.OpenApiClient;
+using Soenneker.DNSimple.OpenApiClient.Item.Domains;
+using Soenneker.DNSimple.OpenApiClient.Models;
+using Soenneker.DNSimple.OpenApiClientUtil.Abstract;
+using Soenneker.Extensions.String;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Kiota.Abstractions;
-using Soenneker.DNSimple.OpenApiClient.Item.Domains;
 using Soenneker.DNSimple.OpenApiClient.Item.Domains.Item;
-using Soenneker.DNSimple.OpenApiClient.Models;
-using Soenneker.Extensions.String;
+using Microsoft.Extensions.Configuration;
+using Soenneker.Extensions.Configuration;
 
 namespace Soenneker.DNSimple.Domains;
 
 /// <inheritdoc cref="IDNSimpleDomainsUtil"/>
 public sealed class DNSimpleDomainsUtil : IDNSimpleDomainsUtil
 {
-    private readonly IRequestAdapter _requestAdapter;
-    private readonly string _accountId;
+    private readonly IDNSimpleOpenApiClientUtil _clientUtil;
+    private readonly int _accountId;
 
-    public DNSimpleDomainsUtil(IRequestAdapter requestAdapter, string accountId)
+    public DNSimpleDomainsUtil(IDNSimpleOpenApiClientUtil clientUtil, IConfiguration configuration)
     {
-        _requestAdapter = requestAdapter ?? throw new ArgumentNullException(nameof(requestAdapter));
-        _accountId = accountId ?? throw new ArgumentNullException(nameof(accountId));
+        _clientUtil = clientUtil;
+        _accountId = configuration.GetValueStrict<int>("DNSimple:AccountId");
     }
 
     public async ValueTask<IEnumerable<Domain>> List(string? nameLike = null, int? registrantId = null, string? sort = null,
         CancellationToken cancellationToken = default)
     {
-        var builder = new DomainsRequestBuilder(new Dictionary<string, object> {{"account", _accountId}}, _requestAdapter);
+        DNSimpleOpenApiClient client = await _clientUtil.Get(cancellationToken);
 
         var queryParams = new DomainsRequestBuilder.DomainsRequestBuilderGetQueryParameters();
 
@@ -39,43 +41,37 @@ public sealed class DNSimpleDomainsUtil : IDNSimpleDomainsUtil
         if (sort.HasContent())
             queryParams.Sort = sort;
 
-        DomainsGetResponse? response = await builder.GetAsDomainsGetResponseAsync(config => config.QueryParameters = queryParams, cancellationToken);
+        DomainsGetResponse? response =
+            await client[_accountId].Domains.GetAsDomainsGetResponseAsync(config => config.QueryParameters = queryParams, cancellationToken);
         return response?.Data ?? [];
     }
 
     public async ValueTask<Domain?> Get(string domainNameOrId, CancellationToken cancellationToken = default)
     {
-        var builder = new WithDomainItemRequestBuilder(new Dictionary<string, object>
-        {
-            {"account", _accountId},
-            {"domain", domainNameOrId}
-        }, _requestAdapter);
+        DNSimpleOpenApiClient client = await _clientUtil.Get(cancellationToken);
 
-        WithDomainGetResponse? response = await builder.GetAsWithDomainGetResponseAsync(cancellationToken: cancellationToken);
+        WithDomainGetResponse? response =
+            await client[_accountId].Domains[domainNameOrId].GetAsWithDomainGetResponseAsync(cancellationToken: cancellationToken);
         return response?.Data;
     }
 
     public async ValueTask<Domain?> Create(string domainName, CancellationToken cancellationToken = default)
     {
-        var builder = new DomainsRequestBuilder(new Dictionary<string, object> {{"account", _accountId}}, _requestAdapter);
+        DNSimpleOpenApiClient client = await _clientUtil.Get(cancellationToken);
 
         var body = new DomainsPostRequestBody
         {
             Name = domainName
         };
 
-        DomainsPostResponse? response = await builder.PostAsDomainsPostResponseAsync(body, cancellationToken: cancellationToken);
+        DomainsPostResponse? response = await client[_accountId].Domains.PostAsDomainsPostResponseAsync(body, cancellationToken: cancellationToken);
         return response?.Data;
     }
 
     public async ValueTask Delete(string domainNameOrId, CancellationToken cancellationToken = default)
     {
-        var builder = new WithDomainItemRequestBuilder(new Dictionary<string, object>
-        {
-            {"account", _accountId},
-            {"domain", domainNameOrId}
-        }, _requestAdapter);
+        DNSimpleOpenApiClient client = await _clientUtil.Get(cancellationToken);
 
-        await builder.DeleteAsync(cancellationToken: cancellationToken);
+        await client[_accountId].Domains[domainNameOrId].DeleteAsync(cancellationToken: cancellationToken);
     }
 }
