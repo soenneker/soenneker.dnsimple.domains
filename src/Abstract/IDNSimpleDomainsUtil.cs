@@ -1,36 +1,45 @@
-﻿using Soenneker.DNSimple.Domains.Requests;
-using Soenneker.DNSimple.Domains.Responses;
+﻿using Soenneker.DNSimple.OpenApiClient.Models;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Soenneker.DNSimple.Domains.Abstract;
 
 /// <summary>
-/// Interface for DNSimple domain-related operations.
+/// Utility class for managing DNSimple domains
 /// </summary>
-public interface IDnSimpleDomainsUtil
+public interface IDNSimpleDomainsUtil
 {
     /// <summary>
-    /// Lists all domains in the account.
+    /// Lists all domains in the account
     /// </summary>
-    /// <param name="nameFilter">Filter domains by name.</param>
-    /// <param name="registrantId">Filter domains by registrant ID.</param>
-    /// <param name="test">Indicates whether to use a test environment.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    ValueTask<DomainListResponse?> ListDomains(string? nameFilter = null, int? registrantId = null, bool test = false, CancellationToken cancellationToken = default);
+    /// <param name="nameLike">Optional filter for domain names</param>
+    /// <param name="registrantId">Optional filter by registrant ID</param>
+    /// <param name="sort">Optional sort parameter</param>
+    /// <param name="cancellationToken">Optional cancellation token</param>
+    /// <returns>A list of domains</returns>
+    ValueTask<IEnumerable<Domain>> List(string? nameLike = null, int? registrantId = null, string? sort = null, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Creates a domain.
+    /// Gets a specific domain by name or ID
     /// </summary>
-    ValueTask<DomainResponse?> CreateDomain(DomainCreateRequest request, bool test = false, CancellationToken cancellationToken = default);
+    /// <param name="domainNameOrId">The domain name or ID</param>
+    /// <param name="cancellationToken">Optional cancellation token</param>
+    /// <returns>The domain details</returns>
+    ValueTask<Domain?> Get(string domainNameOrId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Retrieves details of a domain.
+    /// Creates a new domain
     /// </summary>
-    ValueTask<DomainResponse?> GetDomain(string domain, bool test = false, CancellationToken cancellationToken = default);
+    /// <param name="domainName">The name of the domain to create</param>
+    /// <param name="cancellationToken">Optional cancellation token</param>
+    /// <returns>The created domain</returns>
+    ValueTask<Domain?> Create(string domainName, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Deletes a domain.
+    /// Deletes a domain
     /// </summary>
-    ValueTask<bool> DeleteDomain(string domain, bool test = false, CancellationToken cancellationToken = default);
+    /// <param name="domainNameOrId">The domain name or ID to delete</param>
+    /// <param name="cancellationToken">Optional cancellation token</param>
+    ValueTask Delete(string domainNameOrId, CancellationToken cancellationToken = default);
 }

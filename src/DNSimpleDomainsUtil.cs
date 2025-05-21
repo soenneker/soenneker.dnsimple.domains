@@ -1,77 +1,81 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using Soenneker.DNSimple.Client.Abstract;
-using Soenneker.DNSimple.Domains.Abstract;
-using Soenneker.DNSimple.Domains.Requests;
-using Soenneker.DNSimple.Domains.Responses;
-using Soenneker.Extensions.Configuration;
-using Soenneker.Extensions.HttpClient;
-using Soenneker.Extensions.ValueTask;
-using System.Net.Http;
+﻿using Soenneker.DNSimple.Domains.Abstract;
+using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Kiota.Abstractions;
+using Soenneker.DNSimple.OpenApiClient.Item.Domains;
+using Soenneker.DNSimple.OpenApiClient.Item.Domains.Item;
+using Soenneker.DNSimple.OpenApiClient.Models;
+using Soenneker.Extensions.String;
 
 namespace Soenneker.DNSimple.Domains;
 
-/// <inheritdoc cref="IDnSimpleDomainsUtil"/>
-public class DNSimpleDomainsUtil: IDnSimpleDomainsUtil
+/// <inheritdoc cref="IDNSimpleDomainsUtil"/>
+public sealed class DNSimpleDomainsUtil : IDNSimpleDomainsUtil
 {
-    private readonly IDNSimpleClientUtil _clientUtil;
-    private readonly ILogger<DNSimpleDomainsUtil> _logger;
-
+    private readonly IRequestAdapter _requestAdapter;
     private readonly string _accountId;
 
-    public DNSimpleDomainsUtil(IDNSimpleClientUtil clientUtil, IConfiguration configuration, ILogger<DNSimpleDomainsUtil> logger)
+    public DNSimpleDomainsUtil(IRequestAdapter requestAdapter, string accountId)
     {
-        _clientUtil = clientUtil;
-        _logger = logger;
-        _accountId = configuration.GetValueStrict<string>("DNSimple:AccountId");
+        _requestAdapter = requestAdapter ?? throw new ArgumentNullException(nameof(requestAdapter));
+        _accountId = accountId ?? throw new ArgumentNullException(nameof(accountId));
     }
 
-    /// <summary>
-    /// Lists all domains in the account.
-    /// </summary>
-    public async ValueTask<DomainListResponse?> ListDomains(string? nameFilter = null, int? registrantId = null, bool test = false, CancellationToken cancellationToken = default)
+    public async ValueTask<IEnumerable<Domain>> List(string? nameLike = null, int? registrantId = null, string? sort = null,
+        CancellationToken cancellationToken = default)
     {
-        var endpoint = $"{_accountId}/domains";
-        if (!string.IsNullOrEmpty(nameFilter) || registrantId.HasValue)
+        var builder = new DomainsRequestBuilder(new Dictionary<string, object> {{"account", _accountId}}, _requestAdapter);
+
+        var queryParams = new DomainsRequestBuilder.DomainsRequestBuilderGetQueryParameters();
+
+        if (nameLike.HasContent())
+            queryParams.NameLike = nameLike;
+
+        if (registrantId.HasValue)
+            queryParams.RegistrantId = registrantId.Value;
+
+        if (sort.HasContent())
+            queryParams.Sort = sort;
+
+        DomainsGetResponse? response = await builder.GetAsDomainsGetResponseAsync(config => config.QueryParameters = queryParams, cancellationToken);
+        return response?.Data ?? [];
+    }
+
+    public async ValueTask<Domain?> Get(string domainNameOrId, CancellationToken cancellationToken = default)
+    {
+        var builder = new WithDomainItemRequestBuilder(new Dictionary<string, object>
         {
-            endpoint += "?";
-            if (!string.IsNullOrEmpty(nameFilter)) endpoint += $"name_like={nameFilter}&";
-            if (registrantId.HasValue) endpoint += $"registrant_id={registrantId}";
-        }
+            {"account", _accountId},
+            {"domain", domainNameOrId}
+        }, _requestAdapter);
 
-        HttpClient client = await _clientUtil.Get(test, cancellationToken).NoSync();
-        return await client.SendToType<DomainListResponse>(HttpMethod.Get, endpoint, null, _logger, cancellationToken);
+        WithDomainGetResponse? response = await builder.GetAsWithDomainGetResponseAsync(cancellationToken: cancellationToken);
+        return response?.Data;
     }
 
-    /// <summary>
-    /// Creates a new domain entry in the account.
-    /// </summary>
-    public async ValueTask<DomainResponse?> CreateDomain(DomainCreateRequest request, bool test = false, CancellationToken cancellationToken = default)
+    public async ValueTask<Domain?> Create(string domainName, CancellationToken cancellationToken = default)
     {
-        var endpoint = $"{_accountId}/domains";
-        HttpClient client = await _clientUtil.Get(test, cancellationToken).NoSync();
-        return await client.SendToType<DomainResponse>(HttpMethod.Post, endpoint, request, _logger, cancellationToken);
+        var builder = new DomainsRequestBuilder(new Dictionary<string, object> {{"account", _accountId}}, _requestAdapter);
+
+        var body = new DomainsPostRequestBody
+        {
+            Name = domainName
+        };
+
+        DomainsPostResponse? response = await builder.PostAsDomainsPostResponseAsync(body, cancellationToken: cancellationToken);
+        return response?.Data;
     }
 
-    /// <summary>
-    /// Retrieves the details of an existing domain.
-    /// </summary>
-    public async ValueTask<DomainResponse?> GetDomain(string domain, bool test = false, CancellationToken cancellationToken = default)
+    public async ValueTask Delete(string domainNameOrId, CancellationToken cancellationToken = default)
     {
-        var endpoint = $"{_accountId}/domains/{domain}";
-        HttpClient client = await _clientUtil.Get(test, cancellationToken).NoSync();
-        return await client.SendToType<DomainResponse>(HttpMethod.Get, endpoint, null, _logger, cancellationToken);
-    }
+        var builder = new WithDomainItemRequestBuilder(new Dictionary<string, object>
+        {
+            {"account", _accountId},
+            {"domain", domainNameOrId}
+        }, _requestAdapter);
 
-    /// <summary>
-    /// Deletes a domain from the account.
-    /// </summary>
-    public async ValueTask<bool> DeleteDomain(string domain, bool test = false, CancellationToken cancellationToken = default)
-    {
-        var endpoint = $"{_accountId}/domains/{domain}";
-        HttpClient client = await _clientUtil.Get(test, cancellationToken).NoSync();
-        return (await client.SendToType<DomainResponse>(HttpMethod.Delete, endpoint, null, _logger, cancellationToken)) != null;
+        await builder.DeleteAsync(cancellationToken: cancellationToken);
     }
 }

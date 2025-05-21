@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soenneker.DNSimple.Client.Registrars;
 using Soenneker.DNSimple.Domains.Abstract;
+using Soenneker.DNSimple.OpenApiClientUtil.Registrars;
 
 namespace Soenneker.DNSimple.Domains.Registrars;
 
@@ -15,8 +16,7 @@ public static class DNSimpleDomainsUtilRegistrar
     /// </summary>
     public static IServiceCollection AddDNSimpleDomainsUtilAsSingleton(this IServiceCollection services)
     {
-        services.AddDNSimpleClientUtilAsSingleton();
-        services.TryAddSingleton<IDnSimpleDomainsUtil, DNSimpleDomainsUtil>();
+        services.AddDNSimpleOpenApiClientUtilAsSingleton().TryAddSingleton<IDNSimpleDomainsUtil, DNSimpleDomainsUtil>();
 
         return services;
     }
@@ -26,8 +26,7 @@ public static class DNSimpleDomainsUtilRegistrar
     /// </summary>
     public static IServiceCollection AddDNSimpleDomainsUtilAsScoped(this IServiceCollection services)
     {
-        services.AddDNSimpleClientUtilAsScoped();
-        services.TryAddScoped<IDnSimpleDomainsUtil, DNSimpleDomainsUtil>();
+        services.AddDNSimpleOpenApiClientUtilAsSingleton().TryAddScoped<IDNSimpleDomainsUtil, DNSimpleDomainsUtil>();
 
         return services;
     }
