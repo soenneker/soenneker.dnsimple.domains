@@ -1,16 +1,17 @@
-﻿using Soenneker.DNSimple.Domains.Abstract;
+﻿using Microsoft.Extensions.Configuration;
+using Soenneker.DNSimple.Domains.Abstract;
 using Soenneker.DNSimple.OpenApiClient;
 using Soenneker.DNSimple.OpenApiClient.Item.Domains;
+using Soenneker.DNSimple.OpenApiClient.Item.Domains.Item;
 using Soenneker.DNSimple.OpenApiClient.Models;
 using Soenneker.DNSimple.OpenApiClientUtil.Abstract;
+using Soenneker.Extensions.Configuration;
 using Soenneker.Extensions.String;
+using Soenneker.Extensions.Task;
+using Soenneker.Extensions.ValueTask;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Soenneker.DNSimple.OpenApiClient.Item.Domains.Item;
-using Microsoft.Extensions.Configuration;
-using Soenneker.Extensions.Configuration;
-using Soenneker.Extensions.Task;
 
 namespace Soenneker.DNSimple.Domains;
 
@@ -29,7 +30,7 @@ public sealed class DNSimpleDomainsUtil : IDNSimpleDomainsUtil
     public async ValueTask<IEnumerable<Domain>> List(string? nameLike = null, int? registrantId = null, string? sort = null,
         CancellationToken cancellationToken = default)
     {
-        DNSimpleOpenApiClient client = await _clientUtil.Get(cancellationToken);
+        DNSimpleOpenApiClient client = await _clientUtil.Get(cancellationToken).NoSync();
 
         var queryParams = new DomainsRequestBuilder.DomainsRequestBuilderGetQueryParameters();
 
@@ -42,36 +43,37 @@ public sealed class DNSimpleDomainsUtil : IDNSimpleDomainsUtil
         if (sort.HasContent())
             queryParams.Sort = sort;
 
-        DomainsGetResponse? response =
-            await client[_accountId].Domains.GetAsDomainsGetResponseAsync(config => config.QueryParameters = queryParams, cancellationToken);
+        DomainsGetResponse? response = await client[_accountId]
+                                             .Domains.GetAsDomainsGetResponseAsync(config => config.QueryParameters = queryParams, cancellationToken)
+                                             .NoSync();
         return response?.Data ?? [];
     }
 
     public async ValueTask<Domain?> Get(string domainNameOrId, CancellationToken cancellationToken = default)
     {
-        DNSimpleOpenApiClient client = await _clientUtil.Get(cancellationToken);
+        DNSimpleOpenApiClient client = await _clientUtil.Get(cancellationToken).NoSync();
 
         WithDomainGetResponse? response =
-            await client[_accountId].Domains[domainNameOrId].GetAsWithDomainGetResponseAsync(cancellationToken: cancellationToken);
+            await client[_accountId].Domains[domainNameOrId].GetAsWithDomainGetResponseAsync(cancellationToken: cancellationToken).NoSync();
         return response?.Data;
     }
 
     public async ValueTask<Domain?> Create(string domainName, CancellationToken cancellationToken = default)
     {
-        DNSimpleOpenApiClient client = await _clientUtil.Get(cancellationToken);
+        DNSimpleOpenApiClient client = await _clientUtil.Get(cancellationToken).NoSync();
 
         var body = new DomainsPostRequestBody
         {
             Name = domainName
         };
 
-        DomainsPostResponse? response = await client[_accountId].Domains.PostAsDomainsPostResponseAsync(body, cancellationToken: cancellationToken);
+        DomainsPostResponse? response = await client[_accountId].Domains.PostAsDomainsPostResponseAsync(body, cancellationToken: cancellationToken).NoSync();
         return response?.Data;
     }
 
     public async ValueTask Delete(string domainNameOrId, CancellationToken cancellationToken = default)
     {
-        DNSimpleOpenApiClient client = await _clientUtil.Get(cancellationToken);
+        DNSimpleOpenApiClient client = await _clientUtil.Get(cancellationToken).NoSync();
 
         await client[_accountId].Domains[domainNameOrId].DeleteAsync(cancellationToken: cancellationToken).NoSync();
     }
