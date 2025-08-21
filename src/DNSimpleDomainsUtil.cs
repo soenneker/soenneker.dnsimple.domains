@@ -40,11 +40,8 @@ public sealed class DNSimpleDomainsUtil : IDNSimpleDomainsUtil
         if (registrantId.HasValue)
             queryParams.RegistrantId = registrantId.Value;
 
-        if (sort.HasContent())
-            queryParams.Sort = sort;
-
         DomainsGetResponse? response = await client[_accountId]
-                                             .Domains.GetAsDomainsGetResponseAsync(config => config.QueryParameters = queryParams, cancellationToken)
+                                             .Domains.GetAsync(config => config.QueryParameters = queryParams, cancellationToken)
                                              .NoSync();
         return response?.Data ?? [];
     }
@@ -54,7 +51,7 @@ public sealed class DNSimpleDomainsUtil : IDNSimpleDomainsUtil
         DNSimpleOpenApiClient client = await _clientUtil.Get(cancellationToken).NoSync();
 
         WithDomainGetResponse? response =
-            await client[_accountId].Domains[domainNameOrId].GetAsWithDomainGetResponseAsync(cancellationToken: cancellationToken).NoSync();
+            await client[_accountId].Domains[domainNameOrId].GetAsync(cancellationToken: cancellationToken).NoSync();
         return response?.Data;
     }
 
@@ -67,7 +64,7 @@ public sealed class DNSimpleDomainsUtil : IDNSimpleDomainsUtil
             Name = domainName
         };
 
-        DomainsPostResponse? response = await client[_accountId].Domains.PostAsDomainsPostResponseAsync(body, cancellationToken: cancellationToken).NoSync();
+        DomainsPostResponse? response = await client[_accountId].Domains.PostAsync(body, cancellationToken: cancellationToken).NoSync();
         return response?.Data;
     }
 
