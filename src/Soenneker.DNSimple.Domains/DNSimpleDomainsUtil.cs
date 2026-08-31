@@ -40,6 +40,20 @@ public sealed class DNSimpleDomainsUtil : IDNSimpleDomainsUtil
         if (registrantId.HasValue)
             queryParams.RegistrantId = registrantId.Value;
 
+        if (sort.HasContent())
+        {
+            queryParams.Sort = sort switch
+            {
+                "id:asc" => SortDomains.IdColonAsc,
+                "id:desc" => SortDomains.IdColonDesc,
+                "name:asc" => SortDomains.NameColonAsc,
+                "name:desc" => SortDomains.NameColonDesc,
+                "expiration:asc" => SortDomains.ExpirationColonAsc,
+                "expiration:desc" => SortDomains.ExpirationColonDesc,
+                _ => null
+            };
+        }
+
         ListDomains200Response? response = await client[_accountId]
                                          .Domains.GetAsync(config => config.QueryParameters = queryParams, cancellationToken)
                                          .NoSync();

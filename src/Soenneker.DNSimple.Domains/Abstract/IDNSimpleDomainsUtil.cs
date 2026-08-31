@@ -11,13 +11,13 @@ namespace Soenneker.DNSimple.Domains.Abstract;
 public interface IDNSimpleDomainsUtil
 {
     /// <summary>
-    /// Lists all domains in the account
+    /// Lists the domains returned by DNSimple for the configured account.
     /// </summary>
     /// <param name="nameLike">Optional filter for domain names</param>
     /// <param name="registrantId">Optional filter by registrant ID</param>
-    /// <param name="sort">Optional sort parameter</param>
+    /// <param name="sort">Optional DNSimple sort value such as <c>name:asc</c> or <c>expiration:desc</c>.</param>
     /// <param name="cancellationToken">Optional cancellation token</param>
-    /// <returns>A list of domains</returns>
+    /// <returns>The domains in the API response.</returns>
     ValueTask<IEnumerable<Domain>> List(string? nameLike = null, int? registrantId = null, string? sort = null, CancellationToken cancellationToken = default);
 
     /// <summary>
