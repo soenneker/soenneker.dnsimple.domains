@@ -24,7 +24,7 @@ public sealed class DNSimpleDomainsUtil : IDNSimpleDomainsUtil
     public DNSimpleDomainsUtil(IDNSimpleOpenApiClientUtil clientUtil, IConfiguration configuration)
     {
         _clientUtil = clientUtil;
-        _accountId = configuration.GetValueStrict<int>("DNSimple:AccountId");
+        _accountId = (int)new System.ComponentModel.Int32Converter().ConvertFromInvariantString(configuration.GetStringStrict("DNSimple:AccountId"))!;
     }
 
     public async ValueTask<IEnumerable<Domain>> List(string? nameLike = null, int? registrantId = null, string? sort = null,
